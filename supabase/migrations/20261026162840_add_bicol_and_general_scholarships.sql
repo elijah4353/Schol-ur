@@ -1,0 +1,31 @@
+/*
+# Add Bicol-based and general academic scholarships
+
+1. Data changes
+- Inserts new scholarship rows into the existing `scholarships` catalog.
+- Adds Bicol-region-specific scholarships (Camarines Sur, Albay, Sorsogon, Catanduanes, Masbate) covering tuition, living allowance, books, transportation, and research.
+- Adds general academic scholarships open to any enrolled student (merit, community, STEM, leadership, transfer, undergraduate research) that are not limited to the original need-based categories.
+2. Security
+- No schema or policy changes. The `scholarships` table already grants SELECT to `authenticated` and RLS is enabled with a read policy.
+3. Notes
+- Uses a NOT EXISTS guard on `name` so re-running the migration does not duplicate rows.
+- Casts the `deadline` column to `date` explicitly in the VALUES list so Postgres accepts the literal.
+*/
+
+INSERT INTO scholarships (name, category, provider, description, eligibility, amount, deadline, slots_available, slots_total, contact)
+SELECT t.name, t.category, t.provider, t.description, t.eligibility, t.amount, t.deadline::date, t.slots_available, t.slots_total, t.contact
+FROM (VALUES
+  ('Bicol University Tuition Grant'::text, 'Tuition'::text, 'Bicol University'::text, 'Full or partial tuition coverage for enrolled Bicol University students demonstrating academic merit and financial need.'::text, 'Currently enrolled BU student; GPA 2.5+; Bicol resident.'::text, 'Up to $2,000/semester'::text, '2027-02-28'::text, 30::integer, 80::integer, 'scholarships@bu.edu.ph'::text),
+  ('Camarines Sur Academic Scholarship'::text, 'Tuition'::text, 'Provincial Government of Camarines Sur'::text, 'Annual academic scholarship for tuition and miscellaneous fees for outstanding Camarines Sur residents.'::text, 'Resident of Camarines Sur; enrolled in an accredited institution; GPA 2.5+.'::text, 'Up to $1,800/year'::text, '2027-01-31'::text, 25::integer, 100::integer, 'scholarship@camarinessur.gov.ph'::text),
+  ('Albay Livelihood and Study Assistance'::text, 'Living Allowance'::text, 'Albay Provincial Social Welfare Office'::text, 'Monthly living allowance for underprivileged students from Albay province to support day-to-day college expenses.'::text, 'Resident of Albay; household income below regional threshold; enrolled student.'::text, 'Up to $120/month'::text, '2026-12-20'::text, 20::integer, 60::integer, 'pswdo@albay.gov.ph'::text),
+  ('Sorsogon Book and Supply Grant'::text, 'Books'::text, 'Sorsogon City Government'::text, 'Stipend for textbooks, lab manuals, and essential school supplies for Sorsogon students.'::text, 'Resident of Sorsogon; enrolled in a CHED-recognized program.'::text, 'Up to $400/semester'::text, '2027-02-15'::text, 15::integer, 50::integer, 'education@sorsogon.gov.ph'::text),
+  ('Catanduanes State University Aid'::text, 'Tuition'::text, 'Catanduanes State University'::text, 'Tuition assistance and miscellaneous fee subsidy for CatSU students from low-income households.'::text, 'Enrolled CatSU student; barangay certification of indigency.'::text, 'Up to $1,500/year'::text, '2027-03-15'::text, 12::integer, 40::integer, 'aid@catsu.edu.ph'::text),
+  ('Masbate Island Scholarship Program'::text, 'Tuition'::text, 'Provincial Government of Masbate'::text, 'Provincial government scholarship covering tuition and a modest stipend for Masbate residents pursuing higher education.'::text, 'Resident of Masbate; GPA 2.0+; enrolled in an accredited college or university.'::text, 'Up to $1,200/year'::text, '2027-02-10'::text, 18::integer, 70::integer, 'scholarship@masbate.gov.ph'::text),
+  ('Bicol Merit Scholarship'::text, 'General Scholarship'::text, 'Bicol Regional Development Council'::text, 'Regional merit scholarship open to top-performing students across the Bicol Region for any field of study.'::text, 'Bicol resident; GPA 3.0+; enrolled in any accredited institution.'::text, 'Up to $3,000/year'::text, '2027-03-31'::text, 10::integer, 40::integer, 'rdc@bicol.gov.ph'::text),
+  ('DOST-Bicol STEM Grant'::text, 'Research'::text, 'Department of Science and Technology Region V'::text, 'Research and thesis support grant for Bicol students in science, technology, engineering, and mathematics programs.'::text, 'Bicol resident; enrolled in a STEM program; with an approved thesis/research plan.'::text, 'Up to $2,500'::text, '2027-02-28'::text, 8::integer, 30::integer, 'rost@region5.dost.gov.ph'::text),
+  ('National Merit Academic Scholarship'::text, 'General Scholarship'::text, 'National Scholarship Foundation'::text, 'Open merit scholarship for any enrolled undergraduate student with strong academic standing, regardless of region or field.'::text, 'Any enrolled undergraduate; GPA 3.0+; Filipino citizen.'::text, 'Up to $4,000/year'::text, '2027-04-15'::text, 20::integer, 150::integer, 'info@nationalscholarship.org'::text),
+  ('Community Leadership Scholarship'::text, 'General Scholarship'::text, 'Youth Civic Engagement Council'::text, 'Scholarship for students with demonstrated community service and leadership, open nationwide.'::text, 'Any enrolled student; documented volunteer leadership; good academic standing.'::text, 'Up to $2,000/year'::text, '2027-03-20'::text, 15::integer, 80::integer, 'leadership@ycc.org'::text),
+  ('Undergraduate Research Fellowship'::text, 'Research'::text, 'Philippine Academic Research Council'::text, 'Funding for undergraduate research projects across any discipline, including thesis production and conference travel.'::text, 'Enrolled undergraduate with a faculty-approved research proposal.'::text, 'Up to $3,500'::text, '2027-05-01'::text, 12::integer, 50::integer, 'fellowships@parc.org'::text),
+  ('Transfer Student Scholarship'::text, 'General Scholarship'::text, 'National Transfer Student Network'::text, 'Scholarship for students transferring from a community college or associate program to a four-year institution.'::text, 'Currently transferring to a four-year program; GPA 2.5+; enrolled full-time.'::text, 'Up to $2,500/year'::text, '2027-06-15'::text, 18::integer, 100::integer, 'transfer@ntsn.org'::text)
+) AS t(name, category, provider, description, eligibility, amount, deadline, slots_available, slots_total, contact)
+WHERE NOT EXISTS (SELECT 1 FROM scholarships s WHERE s.name = t.name);
